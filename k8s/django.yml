@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-service
+  namespace: notes-app
+spec:
+  type: ClusterIP
+  selector:
+    app: django-app
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-app
+  namespace: notes-app
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: django-app
+  template:
+    metadata:
+      labels:
+        app: django-app
+    spec:
+      containers:
+        - name: django
+          image: YOUR_DOCKERHUB_USERNAME/django-notes-app:1.0
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - gunicorn notesapp.wsgi:application --bind 0.0.0.0:8000
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: django-env
+          readinessProbe:
+            httpGet:
+              path: /admin/
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

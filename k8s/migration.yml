@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-migrate
+  namespace: notes-app
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: django-migrate
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: YOUR_DOCKERHUB_USERNAME/django-notes-app:1.0
+          imagePullPolicy: Always
+          command:
+            - python
+            - manage.py
+            - migrate
+            - --noinput
+          envFrom:
+            - secretRef:
+                name: django-env
